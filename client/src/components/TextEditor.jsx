@@ -1,7 +1,8 @@
 // import React from 'react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Quill from 'quill';
 import katex from 'katex';
+import io from 'socket.io-client';
 import 'quill/dist/quill.snow.css';
 import 'katex/dist/katex.min.css';
 
@@ -19,8 +20,11 @@ const TOOLBAR_OPTIONS = [
   ["clean"],
 ];
 
+const SERVER_URL = import.meta.env.VITE_SERVER_URL;
+
 function TextEditor() {
   const [quill, setQuill] = useState();
+  const [socket, setSocket] = useState();
 
   const editorRef = useCallback((wrapper) => {
     if (wrapper == null) return;
@@ -40,6 +44,47 @@ function TextEditor() {
     setQuill(q);
   }, []);
 
+  // Setup socket.io connection
+  useEffect(() => {
+    const s = io(SERVER_URL);
+    setSocket(s);
+
+    return () => {
+      s.disconnect();
+    };
+  }, []);
+
+  // Send quill changes to server
+  useEffect(() => {
+    if (quill == null || socket == null) return;
+
+    const handler = (delta, oldDelta, source) => {
+      if (source !== 'user') return;
+
+      socket.emit('send-changes', delta);
+    };
+
+    quill.on('text-change', handler);
+
+    return () => {
+      quill.off('text-change', handler);
+    };
+  }, [quill, socket]);
+
+  // Receive quill changes to server
+  useEffect(() => {
+    if (quill == null || socket == null) return;
+
+    const handler = (delta) => {
+      quill.updateContents(delta);
+    };
+
+    socket.on('receive-changes', handler);
+
+    return () => {
+      socket.off('receive-changes', handler);
+    };
+  }, [quill, socket]);
 
   return (
     <div id="text-editor" ref={editorRef}></div>
