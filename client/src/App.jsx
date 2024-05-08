@@ -1,10 +1,11 @@
-// import React from "react";
+// import React from 'react';
+import { TextEditor } from "./components/index.js";
 
 function App() {
 
   return (
     <>
-      Hello World!
+      <TextEditor />
     </>
   );
 }
