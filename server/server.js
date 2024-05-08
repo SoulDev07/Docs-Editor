@@ -3,8 +3,8 @@ import cors from 'cors';
 import http from 'http';
 import dotenv from 'dotenv';
 import { Server } from 'socket.io';
-import { corsOptions } from './options/index.js';
-import { connectToDB } from './services/index.js';
+import { corsOptions } from "./options/index.js";
+import { connectToDB } from "./services/index.js";
 
 dotenv.config();
 
@@ -26,20 +26,27 @@ const io = new Server(server, {
 });
 
 
-io.on('connection', (socket) => {
-  console.log('A user connected');
+io.on("connection", (socket) => {
+  console.log("A user connected");
 
-  socket.on('send-changes', (delta) => {
-    socket.broadcast.emit('receive-changes', delta);
+  socket.on("get-document", (documentID) => {
+    console.log("Getting document with ID:", documentID);
+
+    socket.join(documentID);
+
+    socket.on("send-changes", (delta) => {
+      socket.to(documentID).emit("receive-changes", delta);
+    });
   });
 
-  socket.on('disconnect', () => {
-    console.log('A user disconnected');
+  socket.on("disconnect", () => {
+    socket.leaveAll();
+    console.log("A user disconnected");
   });
 });
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
+app.get("/", (req, res) => {
+  res.send("Hello World!");
 });
 
 server.listen(PORT, () => {

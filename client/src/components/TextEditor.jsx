@@ -1,5 +1,6 @@
 // import React from 'react';
 import { useState, useCallback, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import Quill from 'quill';
 import katex from 'katex';
 import io from 'socket.io-client';
@@ -23,6 +24,7 @@ const TOOLBAR_OPTIONS = [
 const SERVER_URL = import.meta.env.VITE_SERVER_URL;
 
 function TextEditor() {
+  const { id: documentID } = useParams();
   const [quill, setQuill] = useState();
   const [socket, setSocket] = useState();
 
@@ -54,20 +56,28 @@ function TextEditor() {
     };
   }, []);
 
+  // Load document from server
+  useEffect(() => {
+    if (quill == null || socket == null) return;
+
+    socket.emit("get-document", documentID);
+  }, [quill, socket, documentID]);
+
+
   // Send quill changes to server
   useEffect(() => {
     if (quill == null || socket == null) return;
 
     const handler = (delta, oldDelta, source) => {
-      if (source !== 'user') return;
+      if (source !== "user") return;
 
-      socket.emit('send-changes', delta);
+      socket.emit("send-changes", delta);
     };
 
-    quill.on('text-change', handler);
+    quill.on("text-change", handler);
 
     return () => {
-      quill.off('text-change', handler);
+      quill.off("text-change", handler);
     };
   }, [quill, socket]);
 
@@ -79,10 +89,10 @@ function TextEditor() {
       quill.updateContents(delta);
     };
 
-    socket.on('receive-changes', handler);
+    socket.on("receive-changes", handler);
 
     return () => {
-      socket.off('receive-changes', handler);
+      socket.off("receive-changes", handler);
     };
   }, [quill, socket]);
 
