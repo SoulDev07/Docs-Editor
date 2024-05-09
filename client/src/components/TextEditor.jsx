@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import Quill from 'quill';
 import katex from 'katex';
 import io from 'socket.io-client';
+import hash from 'object-hash';
 import 'quill/dist/quill.snow.css';
 import 'katex/dist/katex.min.css';
 
@@ -28,6 +29,8 @@ function TextEditor() {
   const { id: documentID } = useParams();
   const [quill, setQuill] = useState();
   const [socket, setSocket] = useState();
+  const [lastSavedContentHash, setLastSavedContentHash] = useState('');
+
 
   const editorRef = useCallback((wrapper) => {
     if (wrapper == null) return;
@@ -119,13 +122,19 @@ function TextEditor() {
     if (quill == null || socket == null) return;
 
     const interval = setInterval(() => {
-      socket.emit("save-document", quill.getContents());
+      const content = quill.getContents();
+      const currentContentHash = hash(content);
+
+      if (currentContentHash !== lastSavedContentHash) {
+        socket.emit("save-document", content);
+        setLastSavedContentHash(currentContentHash);
+      }
     }, SAVE_INTERVAL);
 
     return () => {
       clearInterval(interval);
     };
-  }, [quill, socket, documentID]);
+  }, [quill, socket, documentID, lastSavedContentHash]);
 
 
   return (
