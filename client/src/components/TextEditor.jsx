@@ -43,6 +43,9 @@ function TextEditor() {
       },
       theme: "snow"
     });
+
+    q.disable();
+
     setQuill(q);
   }, []);
 
@@ -61,6 +64,16 @@ function TextEditor() {
     if (quill == null || socket == null) return;
 
     socket.emit("get-document", documentID);
+
+    socket.once("load-document", (document) => {
+      quill.setContents(document);
+      quill.enable();
+    });
+
+    socket.once("error-document-not-found", (err) => {
+      console.log(err);
+    });
+
   }, [quill, socket, documentID]);
 
 

@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { Server } from 'socket.io';
 import { corsOptions } from "./options/index.js";
 import { connectToDB } from "./services/index.js";
+import { Document } from "./models/index.js";
 
 dotenv.config();
 
@@ -29,8 +30,20 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("A user connected");
 
-  socket.on("get-document", (documentID) => {
-    console.log("Getting document with ID:", documentID);
+  socket.on("get-document", async (documentID) => {
+    try {
+      let doc = await Document.findById({ _id: documentID });
+
+      if (!doc)
+        socket.emit("error-document-not-found", "Document not found");
+      else {
+        doc.lastAccessed = Date.now();
+        await doc.save();
+        socket.emit("load-document", doc.content);
+      }
+    } catch (err) {
+      console.log("Error getting document: ", err);
+    }
 
     socket.join(documentID);
 
