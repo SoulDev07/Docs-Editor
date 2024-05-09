@@ -34,8 +34,10 @@ io.on("connection", (socket) => {
     try {
       let doc = await Document.findById({ _id: documentID });
 
-      if (!doc)
+      if (!doc) {
         socket.emit("error-document-not-found", "Document not found");
+        return;
+      }
       else {
         doc.lastAccessed = Date.now();
         await doc.save();
@@ -49,6 +51,13 @@ io.on("connection", (socket) => {
 
     socket.on("send-changes", (delta) => {
       socket.to(documentID).emit("receive-changes", delta);
+    });
+
+    socket.on("save-document", async (content) => {
+      let doc = await Document.findById({ _id: documentID });
+      doc.content = content;
+      doc.modifiedAt = Date.now();
+      await doc.save();
     });
   });
 

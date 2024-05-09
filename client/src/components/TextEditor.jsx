@@ -9,6 +9,8 @@ import 'katex/dist/katex.min.css';
 
 window.katex = katex;
 
+const SERVER_URL = import.meta.env.VITE_SERVER_URL;
+
 const TOOLBAR_OPTIONS = [
   [{ header: [1, 2, 3, 4, 5, 6, false] }],
   [{ font: [] }],
@@ -20,8 +22,7 @@ const TOOLBAR_OPTIONS = [
   ["image", "video"],
   ["clean"],
 ];
-
-const SERVER_URL = import.meta.env.VITE_SERVER_URL;
+const SAVE_INTERVAL = 3000;
 
 function TextEditor() {
   const { id: documentID } = useParams();
@@ -49,6 +50,7 @@ function TextEditor() {
     setQuill(q);
   }, []);
 
+
   // Setup socket.io connection
   useEffect(() => {
     const s = io(SERVER_URL);
@@ -58,6 +60,7 @@ function TextEditor() {
       s.disconnect();
     };
   }, []);
+
 
   // Load document from server
   useEffect(() => {
@@ -94,6 +97,7 @@ function TextEditor() {
     };
   }, [quill, socket]);
 
+
   // Receive quill changes to server
   useEffect(() => {
     if (quill == null || socket == null) return;
@@ -108,6 +112,21 @@ function TextEditor() {
       socket.off("receive-changes", handler);
     };
   }, [quill, socket]);
+
+
+  // Autosave document
+  useEffect(() => {
+    if (quill == null || socket == null) return;
+
+    const interval = setInterval(() => {
+      socket.emit("save-document", quill.getContents());
+    }, SAVE_INTERVAL);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [quill, socket, documentID]);
+
 
   return (
     <div id="text-editor" ref={editorRef}></div>

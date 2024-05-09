@@ -6,8 +6,8 @@ const documentSchema = new Schema({
     default: "Untitled Document"
   },
   content: {
-    type: String,
-    default: ""
+    type: Object,
+    default: { ops: [{ insert: '\n' }] }
   },
   createdAt: {
     type: Date,
