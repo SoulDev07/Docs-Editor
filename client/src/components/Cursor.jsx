@@ -1,8 +1,8 @@
 // import React from 'react';
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef } from 'react';
 import { usePerfectCursor } from "../hooks/index.js";
 
-function Cursor({ point , color}) {
+function Cursor({ point, color }) {
   const cursorRef = useRef(null);
 
   const animateCursor = useCallback((point) => {
@@ -20,6 +20,7 @@ function Cursor({ point , color}) {
   useEffect(() => {
     onPointMove(point);
   }, [onPointMove, point]);
+
 
   return (
     <svg

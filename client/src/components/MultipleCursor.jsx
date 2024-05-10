@@ -1,5 +1,5 @@
-// import React from 'react'
-import { useState, useEffect } from "react";
+// import React from 'react';
+import { useState, useEffect } from 'react';
 import Cursor from "./Cursor";
 
 function MultipleCursor({ username, socket }) {
@@ -112,13 +112,13 @@ function MultipleCursor({ username, socket }) {
   //     }
   //   };
 
-
   //   intervalId = setInterval(trackCursor, 80);
 
   //   return () => {
   //     clearInterval(intervalId);
   //   };
   // }, []);
+
 
   return (
     <>
