@@ -5,7 +5,7 @@ import Quill from 'quill';
 import katex from 'katex';
 import io from 'socket.io-client';
 import hash from 'object-hash';
-import Cursor from "./Cursor";
+import MultipleCursor from "./MultipleCursor";
 import 'quill/dist/quill.snow.css';
 import 'katex/dist/katex.min.css';
 
@@ -28,10 +28,10 @@ const SAVE_INTERVAL = 3000;
 
 function TextEditor() {
   const { id: documentID } = useParams();
+  const [username, setUsername] = useState("user" + Math.floor(10 + Math.random() * 90));
   const [quill, setQuill] = useState();
   const [socket, setSocket] = useState();
   const [lastSavedContentHash, setLastSavedContentHash] = useState("");
-  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
 
   const editorRef = useCallback((wrapper) => {
     if (wrapper == null) return;
@@ -55,71 +55,6 @@ function TextEditor() {
   }, []);
 
 
-  // Update cursor position
-  useEffect(() => {
-    let timeout = null;
-
-    const handleMouseMove = (e) => {
-      if (!timeout) {
-        timeout = setTimeout(() => {
-          const x = Math.round(e.clientX);
-          const y = Math.round(e.clientY);
-          setCursorPosition({ x, y });
-          timeout = null;
-        }, 200);
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-
-    return () => {
-      clearTimeout(timeout);
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, []);
-
-
-  // useEffect(() => {
-  //   let intervalId;
-
-  //   // const trackCursor = () => {
-  //   //   const inputElement = document.querySelector('.ql-editor');
-  //   //   const selection = window.getSelection();
-
-  //   //   if (selection.rangeCount > 0) {
-  //   //     const range = selection.getRangeAt(0);
-  //   //     const clonedRange = range.cloneRange();
-  //   //     clonedRange.selectNodeContents(inputElement);
-  //   //     clonedRange.setEnd(range.startContainer, range.startOffset);
-  //   //     const cursorPosition = clonedRange.toString().length;
-  //   //     console.log('Cursor position:', cursorPosition);
-  //   //   }
-  //   // };
-
-  //   const trackCursor = () => {
-  //     const inputElement = document.querySelector('.ql-editor');
-  //     if (inputElement) {
-  //       const selection = window.getSelection();
-  //       if (selection.rangeCount > 0) {
-  //         const range = selection.getRangeAt(0);
-  //         const rect = range.getBoundingClientRect();
-  //         const editorRect = inputElement.getBoundingClientRect();
-  //         const x = rect.left - editorRect.left;
-  //         const y = rect.top;
-  //         setCursorPosition([x, y]);
-  //       }
-  //     }
-  //   };
-
-
-  //   intervalId = setInterval(trackCursor, 80);
-
-  //   return () => {
-  //     clearInterval(intervalId);
-  //   };
-  // }, []);
-
-
   // Setup socket.io connection
   useEffect(() => {
     const s = io(SERVER_URL);
@@ -135,7 +70,7 @@ function TextEditor() {
   useEffect(() => {
     if (quill == null || socket == null) return;
 
-    socket.emit("get-document", documentID);
+    socket.emit("get-document", { documentID, username });
 
     socket.once("load-document", (document) => {
       quill.setContents(document);
@@ -146,7 +81,7 @@ function TextEditor() {
       console.log(err);
     });
 
-  }, [quill, socket, documentID]);
+  }, [quill, socket, documentID, username]);
 
 
   // Send quill changes to server
@@ -206,8 +141,7 @@ function TextEditor() {
   return (
     <>
       <div id="text-editor" ref={editorRef}></div>
-      <Cursor point={[cursorPosition.x, cursorPosition.y]} color={"red"} />
-      <Cursor point={[cursorPosition.x + 10, cursorPosition.y + 10]} color={"blue"} />
+      <MultipleCursor username={username} socket={socket} />
     </>
   );
 }

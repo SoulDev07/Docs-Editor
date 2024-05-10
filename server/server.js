@@ -30,7 +30,9 @@ const io = new Server(server, {
 io.on("connection", (socket) => {
   console.log("A user connected");
 
-  socket.on("get-document", async (documentID) => {
+  let documentRoomID = null, userID = null;
+
+  socket.on("get-document", async ({ documentID, username }) => {
     try {
       let doc = await Document.findById({ _id: documentID });
 
@@ -48,6 +50,8 @@ io.on("connection", (socket) => {
     }
 
     socket.join(documentID);
+    documentRoomID = documentID;
+    userID = username;
 
     socket.on("send-changes", (delta) => {
       socket.to(documentID).emit("receive-changes", delta);
@@ -59,10 +63,14 @@ io.on("connection", (socket) => {
       doc.modifiedAt = Date.now();
       await doc.save();
     });
+
+    socket.on("send-cursor", (data) => {
+      socket.to(documentID).emit("receive-cursor", data);
+    });
   });
 
   socket.on("disconnect", () => {
-    socket.leaveAll();
+    socket.to(documentRoomID).emit("delete-cursor", userID);
     console.log("A user disconnected");
   });
 });
