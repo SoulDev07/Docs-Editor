@@ -5,6 +5,7 @@ import Quill from 'quill';
 import katex from 'katex';
 import io from 'socket.io-client';
 import hash from 'object-hash';
+import Cursor from "./Cursor";
 import 'quill/dist/quill.snow.css';
 import 'katex/dist/katex.min.css';
 
@@ -29,8 +30,8 @@ function TextEditor() {
   const { id: documentID } = useParams();
   const [quill, setQuill] = useState();
   const [socket, setSocket] = useState();
-  const [lastSavedContentHash, setLastSavedContentHash] = useState('');
-
+  const [lastSavedContentHash, setLastSavedContentHash] = useState("");
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
 
   const editorRef = useCallback((wrapper) => {
     if (wrapper == null) return;
@@ -52,6 +53,71 @@ function TextEditor() {
 
     setQuill(q);
   }, []);
+
+
+  // Update cursor position
+  useEffect(() => {
+    let timeout = null;
+
+    const handleMouseMove = (e) => {
+      if (!timeout) {
+        timeout = setTimeout(() => {
+          const x = Math.round(e.clientX);
+          const y = Math.round(e.clientY);
+          setCursorPosition({ x, y });
+          timeout = null;
+        }, 200);
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      clearTimeout(timeout);
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
+
+  // useEffect(() => {
+  //   let intervalId;
+
+  //   // const trackCursor = () => {
+  //   //   const inputElement = document.querySelector('.ql-editor');
+  //   //   const selection = window.getSelection();
+
+  //   //   if (selection.rangeCount > 0) {
+  //   //     const range = selection.getRangeAt(0);
+  //   //     const clonedRange = range.cloneRange();
+  //   //     clonedRange.selectNodeContents(inputElement);
+  //   //     clonedRange.setEnd(range.startContainer, range.startOffset);
+  //   //     const cursorPosition = clonedRange.toString().length;
+  //   //     console.log('Cursor position:', cursorPosition);
+  //   //   }
+  //   // };
+
+  //   const trackCursor = () => {
+  //     const inputElement = document.querySelector('.ql-editor');
+  //     if (inputElement) {
+  //       const selection = window.getSelection();
+  //       if (selection.rangeCount > 0) {
+  //         const range = selection.getRangeAt(0);
+  //         const rect = range.getBoundingClientRect();
+  //         const editorRect = inputElement.getBoundingClientRect();
+  //         const x = rect.left - editorRect.left;
+  //         const y = rect.top;
+  //         setCursorPosition([x, y]);
+  //       }
+  //     }
+  //   };
+
+
+  //   intervalId = setInterval(trackCursor, 80);
+
+  //   return () => {
+  //     clearInterval(intervalId);
+  //   };
+  // }, []);
 
 
   // Setup socket.io connection
@@ -87,16 +153,16 @@ function TextEditor() {
   useEffect(() => {
     if (quill == null || socket == null) return;
 
-    const handler = (delta, oldDelta, source) => {
+    const handleTextChange = (delta, oldDelta, source) => {
       if (source !== "user") return;
 
       socket.emit("send-changes", delta);
     };
 
-    quill.on("text-change", handler);
+    quill.on("text-change", handleTextChange);
 
     return () => {
-      quill.off("text-change", handler);
+      quill.off("text-change", handleTextChange);
     };
   }, [quill, socket]);
 
@@ -105,14 +171,14 @@ function TextEditor() {
   useEffect(() => {
     if (quill == null || socket == null) return;
 
-    const handler = (delta) => {
+    const handleReceiveChanges = (delta) => {
       quill.updateContents(delta);
     };
 
-    socket.on("receive-changes", handler);
+    socket.on("receive-changes", handleReceiveChanges);
 
     return () => {
-      socket.off("receive-changes", handler);
+      socket.off("receive-changes", handleReceiveChanges);
     };
   }, [quill, socket]);
 
@@ -138,7 +204,11 @@ function TextEditor() {
 
 
   return (
-    <div id="text-editor" ref={editorRef}></div>
+    <>
+      <div id="text-editor" ref={editorRef}></div>
+      <Cursor point={[cursorPosition.x, cursorPosition.y]} color={"red"} />
+      <Cursor point={[cursorPosition.x + 10, cursorPosition.y + 10]} color={"blue"} />
+    </>
   );
 }
 
