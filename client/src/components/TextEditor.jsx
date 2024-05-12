@@ -8,6 +8,7 @@ import hash from 'object-hash';
 import MultipleCursor from "./MultipleCursor";
 import 'quill/dist/quill.snow.css';
 import 'katex/dist/katex.min.css';
+import './TextEditor.css';
 
 window.katex = katex;
 
