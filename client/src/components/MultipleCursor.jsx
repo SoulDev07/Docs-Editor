@@ -6,32 +6,68 @@ function MultipleCursor({ username, socket }) {
   // const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   const [otherUsersCursorPosition, setOtherUsersCursorPosition] = useState([]);
 
+  // Function to get the caret coordinates
+  const getCaretCoordinates = () => {
+    const editorElement = document.querySelector('.ql-editor');
+    if (editorElement) {
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        return { x: rect.left, y: rect.top };
+      }
+    }
+    return { x: 0, y: 0 };
+  };
 
-  // Update cursor position
+  // Update caret position
   useEffect(() => {
     if (socket == null) return;
 
-    let timeout = null;
-
-    const handleMouseMove = (e) => {
-      if (!timeout) {
-        timeout = setTimeout(() => {
-          const x = Math.round(e.clientX);
-          const y = Math.round(e.clientY);
-          // setCursorPosition({ x, y });
-          socket.emit("send-cursor", { position: { x, y }, username });
-          timeout = null;
-        }, 200);
-      }
+    const handleInput = () => {
+      const caretCoordinates = getCaretCoordinates();
+      socket.emit("send-cursor", { position: caretCoordinates, username });
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
+    const editorElement = document.querySelector('.ql-editor');
+    if (editorElement) {
+      editorElement.addEventListener('input', handleInput);
+      editorElement.addEventListener('keyup', handleInput);
+    }
 
     return () => {
-      clearTimeout(timeout);
-      window.removeEventListener('mousemove', handleMouseMove);
+      if (editorElement) {
+        editorElement.removeEventListener('input', handleInput);
+        editorElement.removeEventListener('keyup', handleInput);
+      }
     };
   }, [socket, username]);
+
+  // // Update cursor position
+  // useEffect(() => {
+  //   if (socket == null) return;
+
+  //   let timeout = null;
+
+  //   const handleMouseMove = (e) => {
+  //     if (!timeout) {
+  //       timeout = setTimeout(() => {
+  //         const x = Math.round(e.clientX);
+  //         const y = Math.round(e.clientY);
+  //         // setCursorPosition({ x, y });
+  //         socket.emit("send-cursor", { position: { x, y }, username });
+  //         timeout = null;
+  //       }, 200);
+  //     }
+  //   };
+
+  //   window.addEventListener('mousemove', handleMouseMove);
+
+  //   return () => {
+  //     clearTimeout(timeout);
+  //     window.removeEventListener('mousemove', handleMouseMove);
+  //   };
+  // }, [socket, username]);
 
 
   // Update other user cursor position
@@ -125,6 +161,7 @@ function MultipleCursor({ username, socket }) {
       {otherUsersCursorPosition.map(user => (
         <Cursor
           key={user.username}
+          username={user.username}
           point={[user.position.x, user.position.y]}
           color={user.color}
         />

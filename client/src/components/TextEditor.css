@@ -46,4 +46,8 @@
     margin: 0;
     background-color: white;
   }
+
+  .other-user-cursors {
+    display: none;
+  }
 }
